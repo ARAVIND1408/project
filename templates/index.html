@@ -178,7 +178,7 @@
                 document.getElementById('statusIndicator').style.color = '#FF9E00';
                 document.getElementById('statusText').textContent = 'Fetching data...';
 
-                const response = await fetch(`http://localhost:5000/api/water-consumption/${houseId}`);
+                const response = await fetch(`http://project-xash.onrender.com/api/water-consumption/${houseId}`);
                 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
