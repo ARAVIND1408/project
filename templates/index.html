@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌈 Water Consumption Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="dashboard">
+        <h1><i class="fas fa-tint"></i> Rural Water Monitoring System</h1>
+
+        <div class="controls">
+            <div class="search-container">
+                <input type="text" id="houseSearch" placeholder="🔍 Enter House ID (e.g. H1001)">
+                <button onclick="fetchHouseData()">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <button onclick="clearSearch()">
+                    <i class="fas fa-sync-alt"></i> Clear
+                </button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="waterData">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-home"></i> House ID</th>
+                        <th><i class="fas fa-tint"></i> Water Used (L)</th>
+                        <th><i class="fas fa-rupee-sign"></i> Price (₹)</th>
+                        <th><i class="fas fa-traffic-light"></i> Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="no-data">
+                        <td colspan="4">
+                            <i class="fas fa-water"></i>
+                            <p>Enter a House ID to view water consumption details</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="summary">
+            <div class="summary-item">
+                <i class="fas fa-tint"></i>
+                <span>Total Water:</span>
+                <span id="totalWater">0</span> L
+            </div>
+            <div class="summary-item">
+                <i class="fas fa-rupee-sign"></i>
+                <span>Total Amount:</span>
+                <span id="totalPrice">0</span>
+            </div>
+            <div class="summary-item">
+                <i class="fas fa-clock"></i>
+                <span>Last Updated:</span>
+                <span id="lastUpdated">--</span>
+            </div>
+        </div>
+
+        <footer>
+            <div class="system-status">
+                <i class="fas fa-circle" id="statusIndicator"></i>
+                <span id="statusText">System ready</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function showError(title, message) {
+            clearError();
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                <div class="error-content">
+                    <strong>${title}</strong>
+                    <p>${message}</p>
+                </div>
+                <button onclick="clearError()" class="close-error">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            document.querySelector('.dashboard').prepend(errorDiv);
+        }
+
+        function clearError() {
+            const errorDiv = document.querySelector('.error-message');
+            if (errorDiv) errorDiv.remove();
+        }
+
+        function clearSearch() {
+            document.getElementById('houseSearch').value = '';
+            const tbody = document.querySelector('#waterData tbody');
+            tbody.innerHTML = `
+                <tr class="no-data">
+                    <td colspan="4">
+                        <i class="fas fa-water"></i>
+                        <p>Enter a House ID to view water consumption details</p>
+                    </td>
+                </tr>
+            `;
+            document.getElementById('totalWater').textContent = '0';
+            document.getElementById('totalPrice').textContent = '0';
+            document.getElementById('lastUpdated').textContent = '--';
+        }
+
+        function updateSystemStatus(connected) {
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('statusText');
+            
+            if (connected) {
+                indicator.style.color = '#70E000';
+                text.textContent = 'Connected to server';
+            } else {
+                indicator.style.color = '#F72585';
+                text.textContent = 'Connection error';
+            }
+        }
+
+        function updateTable(data) {
+            const tbody = document.querySelector('#waterData tbody');
+            
+            if (!data) {
+                tbody.innerHTML = `
+                    <tr class="no-data">
+                        <td colspan="4">
+                            <i class="fas fa-house-circle-xmark"></i>
+                            <p>No data found for this House ID</p>
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('totalWater').textContent = '0';
+                document.getElementById('totalPrice').textContent = '0';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            const status = data.WaterUsed > 10 ? 'exceeded' : 'ok';
+            const statusIcon = status === 'ok' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+            const statusText = status === 'ok' ? 'Within Limit' : 'Limit Exceeded';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${data.HouseID}</td>
+                <td style="color: var(--water-blue); font-weight: 600;">${data.WaterUsed.toFixed(2)}</td>
+                <td style="color: var(--money-green); font-weight: 600;">₹${data.Price.toFixed(2)}</td>
+                <td>
+                    <span class="status-badge ${status}">
+                        <i class="fas ${statusIcon}"></i>
+                        ${statusText}
+                    </span>
+                </td>
+            `;
+            tbody.appendChild(row);
+
+            // Update summary
+            document.getElementById('totalWater').textContent = data.WaterUsed.toFixed(2);
+            document.getElementById('totalPrice').textContent = data.Price.toFixed(2);
+        }
+
+        async function fetchHouseData() {
+            const houseId = document.getElementById('houseSearch').value.trim();
+            if (!houseId) {
+                showError('Input Required', 'Please enter a valid House ID to search');
+                return;
+            }
+
+            try {
+                updateSystemStatus(true);
+                document.getElementById('statusIndicator').style.color = '#FF9E00';
+                document.getElementById('statusText').textContent = 'Fetching data...';
+
+                const response = await fetch(`http://localhost:5000/api/water-consumption/${houseId}`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Server responded with status ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError('Data Error', data.details || data.error);
+                    updateTable(null);
+                    return;
+                }
+
+                updateTable(data);
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+                clearError();
+                updateSystemStatus(true);
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                showError(
+                    'Connection Error', 
+                    `Failed to load data: ${error.message || 'Please check your connection and try again.'}`
+                );
+                updateTable(null);
+                updateSystemStatus(false);
+            }
+        }
+
+        // Allow search on Enter key press
+        document.getElementById('houseSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchHouseData();
+            }
+        });
+
+        // Initial status check
+        updateSystemStatus(true);
+    </script>
+</body>
+</html>
