@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Airtable Configuration
 AIRTABLE_BASE_ID = 'appqd5RgY61IFtaCW'
 AIRTABLE_TABLE_NAME = 'Monitor'
-AIRTABLE_PAT = 'patiwo0rfyrmWW12O.eb6908d127dbf750d13ea9bbc08b23852ff02e9a4059e461cc1732b350faa13e'
+AIRTABLE_PAT = 'patiwo0rfyrmWW12O.5225c432ca3efa87616f44ef82c655e36676ff4cbe1d9b722951ee95a10f2f82'
 
 def handle_errors(f):
     @wraps(f)
